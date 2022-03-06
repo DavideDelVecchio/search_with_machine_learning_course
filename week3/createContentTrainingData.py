@@ -3,10 +3,16 @@ import os
 import random
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from nltk import SnowballStemmer
+import re
 
+stemmer = SnowballStemmer("english")
 def transform_name(product_name):
-    # IMPLEMENT
-    return product_name
+    # IMPLEMENTED by Davide Del Vecchio
+    #trasformed using the snowball stemmer and substituting the 
+    product_name_clean=re.sub(r'''\W+\s*''', ' ', product_name)
+    product_name_stemmed = stemmer.stem(product_name_clean)
+    return product_name_stemmed
 
 # Directory for product data
 directory = r'/workspace/search_with_machine_learning_course/data/pruned_products/'
@@ -31,10 +37,11 @@ if os.path.isdir(output_dir) == False:
 
 if args.input:
     directory = args.input
-# IMPLEMENT:  Track the number of items in each category and only output if above the min
+# IMPLEMENTED BY Davide Del Vecchio:  Track the number of items in each category and only output if above the min
 min_products = args.min_products
 sample_rate = args.sample_rate
-
+# Tracking using a dictionary to keep track of the number of items in each category with cat as key and the number of items as value
+product_counter={}
 print("Writing results to %s" % output_file)
 with open(output_file, 'w') as output:
     for filename in os.listdir(directory):
@@ -52,7 +59,8 @@ with open(output_file, 'w') as output:
                     child.find('categoryPath')[len(child.find('categoryPath')) - 1][0].text is not None):
                       # Choose last element in categoryPath as the leaf categoryId
                       cat = child.find('categoryPath')[len(child.find('categoryPath')) - 1][0].text
+                      product_counter[cat]=product_counter.get(cat,0)+1
                       # Replace newline chars with spaces so fastText doesn't complain
                       name = child.find('name').text.replace('\n', ' ')
-                      output.write("__label__%s %s\n" % (cat, transform_name(name)))
-
+                      if product_counter[cat] > min_products:
+                        output.write("__label__%s %s\n" % (cat, transform_name(name)))
